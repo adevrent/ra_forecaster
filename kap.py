@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import xlwings as xw
+from datetime import date
 
 def european_to_float(value):
     """
@@ -217,7 +218,7 @@ def merge_disclosures():
     
     return df_security, df_security_coupon
 
-def kap_xw():
+def kap_xw(output_path=None):
     # Create a new Excel workbook
     wb = xw.Book()
     sht2 = wb.sheets.add("SecurityCoupon")
@@ -226,6 +227,16 @@ def kap_xw():
     sht1.range("A1").value = merge_disclosures()[0]
     sht2.range("A1").value = merge_disclosures()[1]
     
+    # Security sheet (sht1)
+    for col_num, col_name in enumerate(sht1.range("A1").expand('right').value, start=1):
+        if col_name not in ["MATURITY_DATE", "ISSUE_DATE", "FREQUENCY"]:
+            sht1.range((2, col_num), sht1.range((2, col_num)).end('down')).api.NumberFormat = "0.00"
+
+    # Security Coupon sheet (sht2)
+    for col_num, col_name in enumerate(sht2.range("A1").expand('right').value, start=1):
+        if col_name != "COUPON_DATE":
+            sht2.range((2, col_num), sht2.range((2, col_num)).end('down')).api.NumberFormat = "0.00"
+            
     default_sheet = wb.sheets[2]
     default_sheet.delete()
     
@@ -236,6 +247,10 @@ def kap_xw():
     # Autofit columns to expand cells to fit their contents
     sht1.autofit()
     sht2.autofit()
-
-# Run code    
-kap_xw()
+    
+    if output_path != None:
+        wb.save(output_path + "KAP_" + str(date.today()))
+        
+# Run code
+output_path = r"C:\Users\adevr\OneDrive\Belgeler\Riskactive Portföy\KAP\security_data.xlsx"  # Adjust the path accordingly
+kap_xw(output_path)
