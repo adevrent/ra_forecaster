@@ -55,6 +55,7 @@ def get_security_params(infolist):
         fis_dict={}
         if int(paramdict["Kupon Sayısı"]) == 0:
             inst_type = "CORP_DISCOUNTED"
+            coupon = 0
         else:
             inst_type = "CORP_FIXED_COUPON"
         
@@ -227,6 +228,14 @@ def kap_xw():
     
     default_sheet = wb.sheets[2]
     default_sheet.delete()
+    
+    # Make the first row bold
+    sht1.range("A1").expand('right').api.Font.Bold = True
+    sht2.range("A1").expand('right').api.Font.Bold = True
+    
+    # Autofit columns to expand cells to fit their contents
+    sht1.autofit()
+    sht2.autofit()
 
 # Run code    
 kap_xw()
