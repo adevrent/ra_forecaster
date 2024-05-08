@@ -4,6 +4,62 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import xlwings as xw
 from datetime import date
+import re
+
+def get_coupon_rate_via_google(isin_code):
+    """
+    Scrapes the coupon rate from Google search results by finding the first result on cbonds.com.
+    """
+    # Prepare the Google search query URL
+    query = f'site:cbonds.com "{isin_code}"'
+    google_url = f"https://www.google.com/search?q={query}"
+
+    # Headers to avoid bot detection
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+
+    # Make the request to Google
+    response = requests.get(google_url, headers=headers)
+    if response.status_code != 200:
+        raise ValueError("Failed to fetch Google search results.")
+
+    # Parse the Google search results page
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Find all Google search results
+    search_results = soup.select("div.g")
+
+    # Initialize the coupon rate variable
+    coupon_rate = None
+
+    # Loop through the search results to find the Cbonds result
+    for result in search_results:
+        # Extract the link and title
+        link = result.find("a")["href"]
+        title = result.find("h3").get_text()
+
+        # Check if the link is from cbonds.com
+        if "cbonds.com" in link:
+            # print(f"Found Cbonds link: {link}")
+            # print(f"Found title: {title}")
+
+            # Extract the coupon rate using a regex pattern
+            match = re.search(r'(\d+(\.\d+)?)%?', title)
+            if match:
+                coupon_rate = float(match.group(1))
+                break
+
+    if coupon_rate is None:
+        raise ValueError("No suitable Cbonds link snippet found in Google search results.")
+
+    return coupon_rate
+
+# Example usage
+isin_code = "XS2819243465"
+coupon_rate = get_coupon_rate_via_google(isin_code)
+print(f"Coupon rate for ISIN {isin_code}: {coupon_rate}%")
+
 
 def european_to_float(value):
     """
@@ -36,7 +92,7 @@ def get_security_params(infolist):
 
     # Step 3: Extract several params
     paramdict = {}
-    for label in ["ISIN Kodu", "Vade Tarihi", "Döviz Cinsi", "İhraç Fiyatı", "Faiz Oranı - Yıllık Basit (%)", "Satışı Gerçekleştirilen Nominal Tutar", "Satışa Başlanma Tarihi", "Kupon Sayısı", "Ek Getiri (%)", "Kupon Ödeme Sıklığı"]:
+    for label in ["ISIN Kodu", "Vade Tarihi", "Döviz Cinsi", "İhraç Fiyatı", "Faiz Oranı - Yıllık Basit (%)", "Satışı Gerçekleştirilen Nominal Tutar", "Satışın Tamamlanma Tarihi", "Kupon Sayısı", "Ek Getiri (%)", "Kupon Ödeme Sıklığı"]:
         param = None
         for row in soup.find_all("tr"):
             label_div = row.find("div", class_="bold font14")
@@ -51,16 +107,19 @@ def get_security_params(infolist):
     
     # If 0 or 1 coupon payment, there is no cash flow table
     if len(soup.find_all("table")) < 10:
-        coupon = european_to_float(paramdict["Faiz Oranı - Yıllık Basit (%)"])
-    
-        fis_dict={}
-        if int(paramdict["Kupon Sayısı"]) == 0:
-            inst_type = "CORP_DISCOUNTED"
-            coupon = 0
-        else:
-            inst_type = "CORP_FIXED_COUPON"
+        coupon = [european_to_float(paramdict["Faiz Oranı - Yıllık Basit (%)"]) if paramdict["Faiz Oranı - Yıllık Basit (%)"] != None else 0][0]
+        frequency = int(paramdict["Kupon Sayısı"])
         
-        discdict = {"ISIN_CODE":paramdict["ISIN Kodu"], "COUPON_DATE":pd.to_datetime(paramdict["Vade Tarihi"], format="%d.%m.%Y"), "COUPON_RATE":european_to_float(paramdict["Faiz Oranı - Yıllık Basit (%)"])}
+        fis_dict={}
+        if paramdict["Döviz Cinsi"] != "TRY":
+            inst_type = "EUROBOND"
+        else:
+            if int(paramdict["Kupon Sayısı"]) == 0:
+                inst_type = "CORP_DISCOUNTED"
+            else:
+                inst_type = "CORP_FIXED_COUPON"
+        
+        discdict = {"ISIN_CODE":paramdict["ISIN Kodu"], "COUPON_DATE":pd.to_datetime(paramdict["Vade Tarihi"], format="%d.%m.%Y"), "COUPON_RATE":coupon}
         df_security_coupon = pd.Series(discdict)
         df_security_coupon = df_security_coupon.to_frame().T
         df_security_coupon.set_index("ISIN_CODE", inplace=True)
@@ -79,8 +138,27 @@ def get_security_params(infolist):
 
         # Create the DataFrame
         df = pd.DataFrame(data, columns=headers)
-        # df["Ödeme Tutarı"] = df["Ödeme Tutarı"].apply(european_to_float)
-        df["Faiz Oranı - Dönemsel (%)"] = df["Faiz Oranı - Dönemsel (%)"].apply(european_to_float)
+        
+        # Coupon Frequency
+        if paramdict["Kupon Ödeme Sıklığı"] == None:
+            frequency  = 0
+        elif paramdict["Kupon Ödeme Sıklığı"].lower() == "tek kupon":
+            frequency = 1
+        elif paramdict["Kupon Ödeme Sıklığı"].lower() == "yıllık":
+            frequency = 1
+        elif paramdict["Kupon Ödeme Sıklığı"].lower() == "6 ayda bir":
+            frequency = 2
+        elif paramdict["Kupon Ödeme Sıklığı"].lower() == "3 ayda bir":
+            frequency = 4
+        elif paramdict["Kupon Ödeme Sıklığı"].lower() == "aylık":
+            frequency = 12
+        
+        try:
+            df["Faiz Oranı - Dönemsel (%)"] = df["Faiz Oranı - Dönemsel (%)"].apply(european_to_float)
+        except KeyError:
+            df["Faiz Oranı - Dönemsel (%)"] = get_coupon_rate_via_google(paramdict["ISIN Kodu"]) / frequency
+            df["Faiz Oranı - Yıllık Basit (%)"] = get_coupon_rate_via_google(paramdict["ISIN Kodu"])
+        
         df["COUPON_DATE"] = pd.to_datetime(df["Ödeme Tarihi"], format="%d.%m.%Y")
         df["ISIN_CODE"] = paramdict["ISIN Kodu"]
         
@@ -110,20 +188,6 @@ def get_security_params(infolist):
     else:
         spread = european_to_float(paramdict["Ek Getiri (%)"])
         
-    # Coupon Frequency
-    if paramdict["Kupon Ödeme Sıklığı"] == None:
-        frequency  = 0
-    elif paramdict["Kupon Ödeme Sıklığı"].lower() == "tek kupon":
-        frequency = 1
-    elif paramdict["Kupon Ödeme Sıklığı"].lower() == "yıllık":
-        frequency = 1
-    elif paramdict["Kupon Ödeme Sıklığı"].lower() == "6 ayda bir":
-        frequency = 2
-    elif paramdict["Kupon Ödeme Sıklığı"].lower() == "3 ayda bir":
-        frequency = 4
-    elif paramdict["Kupon Ödeme Sıklığı"].lower() == "aylık":
-        frequency = 12
-        
 
     # Params dict
     fis_dict = {
@@ -136,9 +200,9 @@ def get_security_params(infolist):
         "SPREAD": spread,
         "ISSUER_CODE": infolist[2],  # third element of input list is issuer code
         "ISSUE_INDEX": 0,  # hard-coded, fix later
-        "ISSUE_DATE": pd.to_datetime(paramdict["Satışa Başlanma Tarihi"], format="%d.%m.%Y"),
+        "ISSUE_DATE": pd.to_datetime(paramdict["Satışın Tamamlanma Tarihi"], format="%d.%m.%Y"),
         "DAY_YEAR_BASIS": basis,
-        "ISSUE_PRICE": european_to_float(paramdict["İhraç Fiyatı"]) * 100,
+        "ISSUE_PRICE": [european_to_float(paramdict["İhraç Fiyatı"]) * 100 if paramdict["İhraç Fiyatı"] != None else 100][0],
         "totalIssuedAmount": european_to_float(paramdict["Satışı Gerçekleştirilen Nominal Tutar"]),
         "securityType": None,  # hard-coded, fix later
         "fundUser": None  # hard-coded, fix later
@@ -200,10 +264,8 @@ def parse_disclosures():
             paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
         # elif disc["title"] == "Pay Dışında Sermaye Piyasası Aracı İşlemlerine İlişkin Bildirim (Faizsiz)":
         #     paramlist.append([disc["disclosureIndex"], True, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
-    
-    # print("type:", type(basic_data))
-    # print("len:", len(basic_data))
-    
+    if len(paramlist) == 0:
+        raise ValueError("No disclosures happened yet.")
     return paramlist
 
 def merge_disclosures():
