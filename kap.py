@@ -5,6 +5,14 @@ import pandas as pd
 import xlwings as xw
 from datetime import date
 import re
+import unicodedata
+
+def normalize_text(text):
+    """
+    Normalize text by converting to lowercase and replacing accents or diacritical marks.
+    """
+    text = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8')
+    return text.lower()
 
 def get_coupon_rate_via_google(isin_code):
     """
@@ -51,15 +59,9 @@ def get_coupon_rate_via_google(isin_code):
                 break
 
     if coupon_rate is None:
-        raise ValueError("No suitable Cbonds link snippet found in Google search results.")
+        print("No suitable Cbonds link snippet found in Google search results.")
 
     return coupon_rate
-
-# Example usage
-isin_code = "XS2819243465"
-coupon_rate = get_coupon_rate_via_google(isin_code)
-print(f"Coupon rate for ISIN {isin_code}: {coupon_rate}%")
-
 
 def european_to_float(value):
     """
@@ -71,7 +73,7 @@ def european_to_float(value):
         value = value.replace('.', '').replace(',', '.')
     try:
         return float(value)
-    except ValueError:
+    except:
         return None
 
 def get_security_params(infolist):
@@ -156,8 +158,8 @@ def get_security_params(infolist):
         try:
             df["Faiz Oranı - Dönemsel (%)"] = df["Faiz Oranı - Dönemsel (%)"].apply(european_to_float)
         except KeyError:
-            df["Faiz Oranı - Dönemsel (%)"] = get_coupon_rate_via_google(paramdict["ISIN Kodu"]) / frequency
-            df["Faiz Oranı - Yıllık Basit (%)"] = get_coupon_rate_via_google(paramdict["ISIN Kodu"])
+            df["Faiz Oranı - Dönemsel (%)"] = [(get_coupon_rate_via_google(paramdict["ISIN Kodu"]) / frequency) if get_coupon_rate_via_google(paramdict["ISIN Kodu"]) != None else None][0]
+            df["Faiz Oranı - Yıllık Basit (%)"] = [get_coupon_rate_via_google(paramdict["ISIN Kodu"]) if get_coupon_rate_via_google(paramdict["ISIN Kodu"]) != None else None][0]
         
         df["COUPON_DATE"] = pd.to_datetime(df["Ödeme Tarihi"], format="%d.%m.%Y")
         df["ISIN_CODE"] = paramdict["ISIN Kodu"]
@@ -200,7 +202,7 @@ def get_security_params(infolist):
         "SPREAD": spread,
         "ISSUER_CODE": infolist[2],  # third element of input list is issuer code
         "ISSUE_INDEX": 0,  # hard-coded, fix later
-        "ISSUE_DATE": pd.to_datetime(paramdict["Satışın Tamamlanma Tarihi"], format="%d.%m.%Y"),
+        "ISSUE_DATE": [pd.to_datetime(paramdict["Satışın Tamamlanma Tarihi"], format="%d.%m.%Y") if paramdict["Satışın Tamamlanma Tarihi"] != None else date.today()][0],
         "DAY_YEAR_BASIS": basis,
         "ISSUE_PRICE": [european_to_float(paramdict["İhraç Fiyatı"]) * 100 if paramdict["İhraç Fiyatı"] != None else 100][0],
         "totalIssuedAmount": european_to_float(paramdict["Satışı Gerçekleştirilen Nominal Tutar"]),
@@ -242,7 +244,7 @@ def get_security_params(infolist):
 
     return df_security, df_security_coupon
 
-def parse_disclosures():
+def parse_disclosures(issue_only):
     paramlist = []
     # Retrieve the data from the API
     url = "https://www.kap.org.tr/tr/api/disclosures"
@@ -261,16 +263,21 @@ def parse_disclosures():
         
     for disc in basic_data:
         if disc["title"] == "Pay Dışında Sermaye Piyasası Aracı İşlemlerine İlişkin Bildirim (Faiz İçeren)":
-            paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
+            normalized_summary = normalize_text(disc["summary"])
+            if issue_only:
+                if "ihraci" in normalized_summary:
+                    paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
+            else: # skip "ihraci" filter
+                paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
         # elif disc["title"] == "Pay Dışında Sermaye Piyasası Aracı İşlemlerine İlişkin Bildirim (Faizsiz)":
         #     paramlist.append([disc["disclosureIndex"], True, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
     if len(paramlist) == 0:
         raise ValueError("No disclosures happened yet.")
     return paramlist
 
-def merge_disclosures():
+def merge_disclosures(issue_only):
     flag = True
-    for disclist in parse_disclosures():
+    for disclist in parse_disclosures(issue_only):
         if flag:
             df_security, df_security_coupon = get_security_params(disclist)
             flag = False
@@ -280,14 +287,14 @@ def merge_disclosures():
     
     return df_security, df_security_coupon
                     
-def kap_xw(output_path=None):
+def kap_xw(output_path=None, issue_only=True):
     # Create a new Excel workbook
     wb = xw.Book()
     sht2 = wb.sheets.add("SecurityCoupon")
     sht1 = wb.sheets.add("Security")
     
-    sht1.range("A1").value = merge_disclosures()[0]
-    sht2.range("A1").value = merge_disclosures()[1]
+    sht1.range("A1").value = merge_disclosures(issue_only)[0]
+    sht2.range("A1").value = merge_disclosures(issue_only)[1]
     
     # Security sheet (sht1)
     for col_num, col_name in enumerate(sht1.range("A1").expand('right').value, start=1):
@@ -311,10 +318,10 @@ def kap_xw(output_path=None):
     sht2.autofit()
         
     # Save the Excel workbook
-    wb.save(output_path + "KAP_" + f"{date.today()}" + ".xlsx")
-    wb.close()
+    if output_path != None:
+        wb.save(output_path + "KAP_" + f"{date.today()}" + ".xlsx")
+        wb.close()
     
-        
 # Run code
 output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\"
-kap_xw(output_path)
+kap_xw(issue_only=True)
