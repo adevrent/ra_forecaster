@@ -125,6 +125,11 @@ def get_security_params(infolist):
         df_security_coupon = pd.Series(discdict)
         df_security_coupon = df_security_coupon.to_frame().T
         df_security_coupon.set_index("ISIN_CODE", inplace=True)
+        
+        # if no coupon payments, pass empty dataframe
+        if int(paramdict["Kupon Sayısı"]) == 0:
+            df_security_coupon = df_security_coupon.iloc[0:0]
+        
     # If more than 1 coupon payments:
     else:
         table = soup.find_all("table")[5]
@@ -173,7 +178,10 @@ def get_security_params(infolist):
         df_security_coupon = df.loc[:, ["ISIN_CODE", "COUPON_DATE", "Faiz Oranı - Dönemsel (%)"]].dropna()
         df_security_coupon.columns = ["ISIN_CODE", "COUPON_DATE", "COUPON_RATE"]
         df_security_coupon.set_index("ISIN_CODE", inplace=True)
-
+        
+        # if no coupon payments, pass empty dataframe
+        if frequency == 0:
+            df_security_coupon = df_security_coupon.iloc[0:0]
 
     # Security Sheet
     # Basis
@@ -324,4 +332,4 @@ def kap_xw(output_path=None, issue_only=True):
     
 # Run code
 output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\"
-kap_xw(issue_only=True)
+kap_xw(output_path=None, issue_only=True)
