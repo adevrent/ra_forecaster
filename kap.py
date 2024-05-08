@@ -279,7 +279,7 @@ def merge_disclosures():
             df_security_coupon = pd.concat([df_security_coupon, get_security_params(disclist)[1]])
     
     return df_security, df_security_coupon
-
+                    
 def kap_xw(output_path=None):
     # Create a new Excel workbook
     wb = xw.Book()
@@ -309,10 +309,12 @@ def kap_xw(output_path=None):
     # Autofit columns to expand cells to fit their contents
     sht1.autofit()
     sht2.autofit()
+        
+    # Save the Excel workbook
+    wb.save(output_path + "KAP_" + f"{date.today()}" + ".xlsx")
+    wb.close()
     
-    if output_path != None:
-        wb.save(output_path + "KAP_" + str(date.today()))
         
 # Run code
-output_path = r"C:\Users\adevr\OneDrive\Belgeler\Riskactive Portföy\KAP\security_data.xlsx"  # Adjust the path accordingly
+output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\"
 kap_xw(output_path)
