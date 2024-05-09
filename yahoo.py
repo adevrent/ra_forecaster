@@ -72,5 +72,5 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
         wb.close()
     
 # Run code
-ticker = "TSLA_US"
+ticker = "PGR US EQUITY"
 yf_xw(ticker)
