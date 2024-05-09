@@ -21,13 +21,49 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
         end_date = pd.to_datetime(end, format="%d.%m.%Y")
     
     data = yf.download(ticker, start_date, end_date)
-    # if data empty, try with "^" symbol as ticket might be a fund
+    
+    # if data empty, try with "^" symbol as ticker might be a fund
     if len(data) == 0:
         data = yf.download(f"^{ticker}", start_date, end_date)
-
+    
+    if len(data) == 0:
+        # if data empty again, try futures
+        commodity = ticker.removeprefix("F_").lower().split()[0]
+        tickerdict = {
+            "cotton":"CT=F",
+            "sugar":"SB=F",
+            "coffee":"KC=F", 
+            "crude":"CL=F",
+            "woil":"CL=F", 
+            "brent":"BZ=F", 
+            "cattle":"LE=F",
+            "feeder":"LE=F",
+            "cocoa":"CC=F", 
+            "copper":"HG=F",
+            "corn":"ZC=F",
+            "ngas":"NG=F",
+            "natural":"NG=F",
+            "oat":"ZO=F",
+            "platn":"PL=F",
+            "plat":"PL=F",
+            "soybean":"ZS=F",
+            "soy":"ZS=F",
+            "wheat":"KE=F",
+            "kcbt":"KE=F",
+            "silver":"SI=F",
+            "gold":"GC=F",
+            "gc":"GC=F"
+            }
+        
+        for key in tickerdict.keys():
+            if key in commodity:
+                print(f"commodity, key pair found -> {commodity}, {key}" )
+                data = yf.download(tickerdict[key], start_date, end_date)
+                break
+                
     # Write dataframe to Excel
     wb.sheets[0].range("A1").value = data
     
 # Run code
-ticker = "SPY"
+ticker = "F_Sugar May24"
 yf_xw(ticker)
