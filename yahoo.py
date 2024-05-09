@@ -15,10 +15,14 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
     wb = xw.Book()
     
     if start_date is None:
-        start_date = pd.to_datetime(start, format="%d.%m.%Y")
+        start_date = start
+    else:
+        start_date = pd.to_datetime(start_date, format="%d.%m.%Y")
     
     if end_date is None:
-        end_date = pd.to_datetime(end, format="%d.%m.%Y")
+        end_date = end
+    else:
+        end_date = pd.to_datetime(end_date, format="%d.%m.%Y")
     
     ticker = ticker.removeprefix("F_").lower().split()[0]
     
