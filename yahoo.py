@@ -72,9 +72,10 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
     
     # Save the Excel workbook
     if output_path != None:
-        wb.save(output_path + "YAHOO_" + f"{date.today()}" + ".xlsx")
+        wb.save(output_path + f"{ticker}" + f"_{date.today()}" + ".xlsx")
         wb.close()
     
 # Run code
-ticker = "TSLA_US"
-yf_xw(ticker)
+output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
+ticker = "ISRG"
+yf_xw(ticker, output_path=output_path)
