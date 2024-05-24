@@ -26,6 +26,9 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
     
     ticker = ticker.removeprefix("F_").lower().split()[0]
     
+    # Debug
+    print("normalized ticker =", ticker)
+    
     # Try stocks
     data = yf.download(ticker.split("_")[0], start_date, end_date)
     
@@ -33,8 +36,8 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
     if len(data) == 0:
         data = yf.download(f"^{ticker}", start_date, end_date)
     
+    # if data empty again, try futures
     if len(data) == 0:
-        # if data empty again, try futures
         tickerdict = {
             "cotton":"CT=F",
             "sugar":"SB=F",
@@ -66,6 +69,18 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
                 print(f"commodity, key pair found -> {ticker}, {key}" )
                 data = yf.download(tickerdict[key], start_date, end_date)
                 break
+            
+    # if data empty again, try with ".CBT" suffix
+    if len(data) == 0:
+        data = yf.download(f"{ticker}.CBT", start_date, end_date)
+        
+    # if data empty again, try with ".CMX" suffix
+    if len(data) == 0:
+        data = yf.download(f"{ticker}.CMX", start_date, end_date)
+        
+     # if data empty again, raise ValueError
+    if len(data) == 0:
+        raise ValueError("ticker not found!")
                 
     # Write dataframe to Excel
     wb.sheets[0].range("A1").value = data
@@ -77,5 +92,5 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
     
 # Run code
 output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
-ticker = "ISRG"
+ticker = "F_MHGN24"
 yf_xw(ticker, output_path=output_path)
