@@ -49,16 +49,14 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
     # Debug
     print("normalized ticker =", ticker)
     
-    # Try stocks and ETFs
+    # Try stocks
     data = yf.download(ticker.split("_")[0], start_date, end_date)
     label = "SP500"
-    data["ASSET_NAME"] = f"{ticker.upper()}_US"
     
-    # if data empty, try with "^" symbol as ticker might be an index
+    # if data empty, try with "^" symbol as ticker might be a fund
     if len(data) == 0:
         data = yf.download(f"^{ticker}", start_date, end_date)
         label = "FOR_IND"
-        data["ASSET_NAME"] = ticker.upper()
     
     # if data empty again, try futures
     if len(data) == 0:
@@ -93,20 +91,17 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
                 print(f"commodity, key pair found -> {ticker}, {key}" )
                 data = yf.download(tickerdict[key], start_date, end_date)
                 label = "COMDTY_MARKET"
-                data["ASSET_NAME"] = key.upper()
                 break
             
     # if data empty again, try with ".CBT" suffix
     if len(data) == 0:
         data = yf.download(f"{ticker}.CBT", start_date, end_date)
         label = "COMDTY_MARKET"
-        data["ASSET_NAME"] = ticker.upper()
         
     # if data empty again, try with ".CMX" suffix
     if len(data) == 0:
         data = yf.download(f"{ticker}.CMX", start_date, end_date)
         label = "COMDTY_MARKET"
-        data["ASSET_NAME"] = ticker.upper()
         
      # if data empty again, raise ValueError
     if len(data) == 0:
@@ -114,45 +109,9 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
     
     # Adjust for Turkish business days:
     data = adjust_for_turkish_business_days(data, holidays_filepath)
-    
-    # Format adjustments
-    data["CURRENCY_CODE"] = "USD"
-    data["MARKET_NAME"] = label
-    data["PRICE_BID"] = data["Adj Close"]
-    data["PRICE_ASK"] = data["Adj Close"]
-    data["PRICE_AVERAGE"] = data["Adj Close"]
-    data["DATA_SOURCE"] = "BLOOMBERG"
-    data["DATA_TYPE"] = "EOD"
-    data["RECORD_TIME"] = None
-    
-    # Drop/Rename the columns
-    data.drop(columns=["Close", "Volume"], inplace=True)
-    data.rename(columns={
-        "Open": "PRICE_OPEN",
-        "High": "PRICE_HIGH",
-        "Low": "PRICE_LOW",
-        "Adj Close": "PRICE_CLOSE"
-    }, inplace=True)
-    
-    # Re-order columns
-    data = data[[
-                "ASSET_NAME", "CURRENCY_CODE", "MARKET_NAME",
-                "PRICE_OPEN", "PRICE_HIGH", "PRICE_LOW", "PRICE_CLOSE",
-                "DATA_SOURCE", "DATA_TYPE", "RECORD_TIME"
-            ]]
-    
-    # Rename the index column to "RECORD_DATE"
-    data.rename_axis("RECORD_DATE", inplace=True)
                 
     # Write dataframe to Excel
     wb.sheets[0].range("A1").value = data
-    print("Excel export successful.")
-
-    # Make the first row bold
-    wb.sheets[0].range("1:1").api.Font.Bold = True
-    
-    # Resize columns for readability
-    wb.sheets[0].autofit()
     
     # Save the Excel workbook
     if output_path != None:
@@ -162,8 +121,8 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
         
 # Run code
 holidays_filepath = r"C:\Users\adevr\ra_forecaster\yahoo\riskfree_holiday.xlsx"
-output_path = r"C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
+output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
 
-ticker = "F_Cotton May24"
+ticker = "F_MHGN24"
 
 yf_xw(ticker, output_path=output_path, holidays_filepath=holidays_filepath)
