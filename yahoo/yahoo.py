@@ -10,7 +10,27 @@ end = date.today()
 # Calculate the default start date, which is one year before the end date as default
 start = end - relativedelta(years=1)
 
-def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
+def adjust_for_turkish_business_days(data, holidays_filepath):
+    # Load the data from the first sheet
+    hdays = pd.read_excel(holidays_filepath, sheet_name='Sheet1')
+
+    # Correct the column name and convert it to pandas datetime objects
+    hdays.rename(columns={'# holiday_date': 'holiday_date'}, inplace=True)
+    hdays['holiday_date'] = pd.to_datetime(hdays['holiday_date'])
+
+    # Set the index to date
+    data.index = pd.to_datetime(data.index)
+
+    # Drop rows that are in Turkish holidays
+    data = data[~data.index.isin(hdays['holiday_date'])]
+
+    # Reindex to include all business days between the start and end of the data
+    all_days = pd.date_range(start=data.index.min(), end=data.index.max(), freq='B')
+    data = data.reindex(all_days, method='ffill')
+    
+    return data
+
+def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_filepath=None):
     # Create a new Excel workbook
     wb = xw.Book()
     
@@ -81,6 +101,9 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
      # if data empty again, raise ValueError
     if len(data) == 0:
         raise ValueError("ticker not found!")
+    
+    # Adjust for Turkish business days:
+    data = adjust_for_turkish_business_days(data, holidays_filepath)
                 
     # Write dataframe to Excel
     wb.sheets[0].range("A1").value = data
@@ -89,8 +112,9 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None):
     if output_path != None:
         wb.save(output_path + f"{ticker}" + f"_{date.today()}" + ".xlsx")
         wb.close()
-    
+        
 # Run code
+holidays_filepath = r"C:\Users\adevr\ra_forecaster\yahoo\riskfree_holiday.xlsx"
 output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
-ticker = "F_MHGN24"
-yf_xw(ticker, output_path=output_path)
+ticker = "TSLA"
+yf_xw(ticker, output_path=output_path, holidays_filepath=holidays_filepath)
