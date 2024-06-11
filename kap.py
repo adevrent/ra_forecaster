@@ -273,7 +273,7 @@ def parse_disclosures(issue_only):
         if disc["title"] == "Pay Dışında Sermaye Piyasası Aracı İşlemlerine İlişkin Bildirim (Faiz İçeren)":
             normalized_summary = normalize_text(disc["summary"])
             if issue_only:
-                if ("ihrac" in normalized_summary) and ("kupon" not in normalized_summary):
+                if ("ihrac" in normalized_summary) and ("kupon" not in normalized_summary) and ("itfa" not in normalized_summary):
                     paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
             else: # skip "ihraci" filter
                 paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]

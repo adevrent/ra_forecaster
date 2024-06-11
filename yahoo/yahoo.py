@@ -21,12 +21,12 @@ def adjust_for_turkish_business_days(data, holidays_filepath):
     # Set the index to date
     data.index = pd.to_datetime(data.index)
 
-    # Drop rows that are in Turkish holidays
-    data = data[~data.index.isin(hdays['holiday_date'])]
-
     # Reindex to include all business days between the start and end of the data
     all_days = pd.date_range(start=data.index.min(), end=data.index.max(), freq='B')
     data = data.reindex(all_days, method='ffill')
+    
+    # Drop rows that are in Turkish holidays
+    data = data[~data.index.isin(hdays['holiday_date'])]
     
     return data
 
@@ -154,6 +154,15 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
     # Resize columns for readability
     wb.sheets[0].autofit()
     
+    # Set sheet name based on the label
+    if label == "SP500":
+        sheet_name = "EQUITY"
+    elif label == "FOR_IND":
+        sheet_name = "INDEX"
+    else:
+        sheet_name = "COMMODITY"
+    wb.sheets[0].name = sheet_name
+    
     # Save the Excel workbook
     if output_path != None:
         wb.save(output_path + f"{ticker}" + f"_{date.today()}" + ".xlsx")
@@ -164,6 +173,6 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
 holidays_filepath = r"C:\Users\adevr\ra_forecaster\yahoo\riskfree_holiday.xlsx"
 output_path = r"C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
 
-ticker = "F_Cotton May24"
+ticker = "SPY"
 
 yf_xw(ticker, output_path=output_path, holidays_filepath=holidays_filepath)
