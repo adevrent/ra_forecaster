@@ -384,5 +384,8 @@ def kap_xw(output_path=None, input_path=None, issue_only=True):
 # Run code
 output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\"
 
-# Append to existing
-kap_xw(output_path=output_path, input_path="C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\KAP_main.xlsx", issue_only=True)
+# Create new file
+kap_xw()
+
+# # Append to existing
+# kap_xw(output_path=output_path, input_path="C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\KAP_main.xlsx", issue_only=True)
