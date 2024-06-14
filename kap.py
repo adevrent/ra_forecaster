@@ -105,13 +105,23 @@ def get_security_params(infolist):
         if param is None:  # If the label isn't found, set None
             paramdict[label] = param
     
+    # print("-"*20)
+    # print("ISIN:", paramdict["ISIN Kodu"])
+    
     # Security Coupon Sheet
     
     # If 0 or 1 coupon payment, there is no cash flow table
     if len(soup.find_all("table")) < 10:
-        coupon = [european_to_float(paramdict["Faiz Oranı - Yıllık Basit (%)"]) if paramdict["Faiz Oranı - Yıllık Basit (%)"] != None else 0][0]
-        frequency = int(paramdict["Kupon Sayısı"])
+        # print("    HTML length less than 10")
+        coupon = (european_to_float(paramdict["Faiz Oranı - Yıllık Basit (%)"]) if paramdict["Faiz Oranı - Yıllık Basit (%)"] != None else 0)
         
+        # Frequency
+        if paramdict["Kupon Ödeme Sıklığı"] is None:
+            frequency = None
+        else:
+            frequency = (int(paramdict["Kupon Ödeme Sıklığı"]) if paramdict["Kupon Ödeme Sıklığı"] != "Diğer" else None)
+        
+        # Classification
         fis_dict={}
         if paramdict["Döviz Cinsi"] != "TRY":
             inst_type = "EUROBOND"
@@ -130,8 +140,9 @@ def get_security_params(infolist):
         if int(paramdict["Kupon Sayısı"]) == 0:
             df_security_coupon = df_security_coupon.iloc[0:0]
         
-    # If more than 1 coupon payments:
+    # If more than 1 coupon payments, there is a cash flow table:
     else:
+        # print("    HTML length greater than 10")
         table = soup.find_all("table")[5]
         rows = table.find_all("tr")
 
@@ -145,9 +156,11 @@ def get_security_params(infolist):
 
         # Create the DataFrame
         df = pd.DataFrame(data, columns=headers)
+        # print(df)
+        # print("df.shape =", df.shape)
         
         # Coupon Frequency
-        if paramdict["Kupon Ödeme Sıklığı"] == None:
+        if paramdict["Kupon Ödeme Sıklığı"] is None:
             frequency  = 0
         elif paramdict["Kupon Ödeme Sıklığı"].lower() == "tek kupon":
             frequency = 1
@@ -159,15 +172,20 @@ def get_security_params(infolist):
             frequency = 4
         elif paramdict["Kupon Ödeme Sıklığı"].lower() == "aylık":
             frequency = 12
+        else:
+            frequency = None
         
         try:
             df["Faiz Oranı - Dönemsel (%)"] = df["Faiz Oranı - Dönemsel (%)"].apply(european_to_float)
         except KeyError:
-            df["Faiz Oranı - Dönemsel (%)"] = [(get_coupon_rate_via_google(paramdict["ISIN Kodu"]) / frequency) if get_coupon_rate_via_google(paramdict["ISIN Kodu"]) != None else None][0]
-            df["Faiz Oranı - Yıllık Basit (%)"] = [get_coupon_rate_via_google(paramdict["ISIN Kodu"]) if get_coupon_rate_via_google(paramdict["ISIN Kodu"]) != None else None][0]
+            df["Faiz Oranı - Dönemsel (%)"] = ((get_coupon_rate_via_google(paramdict["ISIN Kodu"]) / frequency) if get_coupon_rate_via_google(paramdict["ISIN Kodu"]) != None else None)
+            df["Faiz Oranı - Yıllık Basit (%)"] = (get_coupon_rate_via_google(paramdict["ISIN Kodu"]) if get_coupon_rate_via_google(paramdict["ISIN Kodu"]) != None else None)
         
         df["COUPON_DATE"] = pd.to_datetime(df["Ödeme Tarihi"], format="%d.%m.%Y")
         df["ISIN_CODE"] = paramdict["ISIN Kodu"]
+        
+        print("   df after manipulatons")
+        print(df)
         
         # Set coupon rate depending if FRN or not
         if paramdict["Faiz Oranı - Yıllık Basit (%)"] == None:
@@ -175,12 +193,15 @@ def get_security_params(infolist):
         else:
             coupon = european_to_float(paramdict["Faiz Oranı - Yıllık Basit (%)"])
 
-        df_security_coupon = df.loc[:, ["ISIN_CODE", "COUPON_DATE", "Faiz Oranı - Dönemsel (%)"]].dropna()
+        df_security_coupon = df.loc[:, ["ISIN_CODE", "COUPON_DATE", "Faiz Oranı - Dönemsel (%)"]]  # removed .dropna()
         df_security_coupon.columns = ["ISIN_CODE", "COUPON_DATE", "COUPON_RATE"]
         df_security_coupon.set_index("ISIN_CODE", inplace=True)
         
+        # print("  Kupon Sayısı =", paramdict["Kupon Sayısı"])
+        # print(df_security_coupon)
+        
         # if no coupon payments, pass empty dataframe
-        if frequency == 0:
+        if paramdict["Kupon Sayısı"] in [0, None]:
             df_security_coupon = df_security_coupon.iloc[0:0]
 
     # Security Sheet
@@ -205,7 +226,7 @@ def get_security_params(infolist):
         "INSTRUMENT_TYPE": None,  # instrument type is assigned below
         "MATURITY_DATE": pd.to_datetime(paramdict["Vade Tarihi"], format="%d.%m.%Y"),
         "CURRENCY": paramdict["Döviz Cinsi"],
-        "FREQUENCY": int(frequency),
+        "FREQUENCY": (int(frequency) if frequency is not None else None),
         "COUPON": coupon,
         "SPREAD": spread,
         "ISSUER_CODE": infolist[2],  # third element of input list is issuer code
