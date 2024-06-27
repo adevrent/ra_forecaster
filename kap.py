@@ -315,7 +315,7 @@ def merge_disclosures(issue_only):
             df_security_coupon = pd.concat([df_security_coupon, get_security_params(disclist)[1]])
     
     return df_security, df_security_coupon
-                    
+                
 def kap_xw(output_path=None, issue_only=True):
     # Create a new Excel workbook
     wb = xw.Book()
@@ -366,4 +366,4 @@ def kap_xw(output_path=None, issue_only=True):
     
 # Run code
 output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\"
-kap_xw(output_path=None, issue_only=True)
+kap_xw(output_path=output_path, issue_only=True)

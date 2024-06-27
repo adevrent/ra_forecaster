@@ -45,18 +45,31 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
         end_date = pd.to_datetime(end_date, format="%d.%m.%Y")
     
     ticker = ticker.removeprefix("F_").lower().split()[0]
-    
+     
     # Debug
     print("normalized ticker =", ticker)
     
-    # Try stocks and ETFs
-    data = yf.download(ticker.split("_")[0], start_date, end_date)
-    label = "SP500"
-    data["ASSET_NAME"] = f"{ticker.upper()}_US"
+    # Try BIST stocks first
+    data = yf.download((ticker.split("_")[0] + ".IS"), start_date, end_date)
+    currency = "TRY"
+    label = "IMKB"
+    data["ASSET_NAME"] = ticker.upper()
     
-    # if data empty, try with "^" symbol as ticker might be an index
+    # Try US stocks and ETFs
+    if len(data) == 0:
+        data = yf.download(ticker.split("_")[0], start_date, end_date)
+        currency = "USD"
+        label = "SP500"
+        
+        if "_us" in ticker:
+            data["ASSET_NAME"] = f"{ticker.upper()}"
+        else:
+            data["ASSET_NAME"] = f"{ticker.upper()}_US"
+    
+    # if data empty, try with "^" symbol as ticker might be a US index
     if len(data) == 0:
         data = yf.download(f"^{ticker}", start_date, end_date)
+        currency = "USD"
         label = "FOR_IND"
         data["ASSET_NAME"] = ticker.upper()
     
@@ -92,6 +105,7 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
             if key in ticker:
                 print(f"commodity, key pair found -> {ticker}, {key}" )
                 data = yf.download(tickerdict[key], start_date, end_date)
+                currency = "USD"
                 label = "COMDTY_MARKET"
                 data["ASSET_NAME"] = key.upper()
                 break
@@ -99,12 +113,14 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
     # if data empty again, try with ".CBT" suffix
     if len(data) == 0:
         data = yf.download(f"{ticker}.CBT", start_date, end_date)
+        currency = "USD"
         label = "COMDTY_MARKET"
         data["ASSET_NAME"] = ticker.upper()
         
     # if data empty again, try with ".CMX" suffix
     if len(data) == 0:
         data = yf.download(f"{ticker}.CMX", start_date, end_date)
+        currency = "USD"
         label = "COMDTY_MARKET"
         data["ASSET_NAME"] = ticker.upper()
         
@@ -116,7 +132,7 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
     data = adjust_for_turkish_business_days(data, holidays_filepath)
     
     # Format adjustments
-    data["CURRENCY_CODE"] = "USD"
+    data["CURRENCY_CODE"] = currency
     data["MARKET_NAME"] = label
     data["PRICE_BID"] = data["Adj Close"]
     data["PRICE_ASK"] = data["Adj Close"]
@@ -173,6 +189,6 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
 holidays_filepath = r"C:\Users\adevr\ra_forecaster\yahoo\riskfree_holiday.xlsx"
 output_path = r"C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
 
-ticker = "SPY"
+ticker = "TSLA_US"
 
-yf_xw(ticker, output_path=output_path, holidays_filepath=holidays_filepath)
+yf_xw(ticker, output_path=None, holidays_filepath=holidays_filepath)
