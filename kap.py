@@ -112,7 +112,6 @@ def get_security_params(infolist):
     
     # If 0 or 1 coupon payment, there is no cash flow table
     if len(soup.find_all("table")) < 10:
-        # print("    HTML length less than 10")
         coupon = (european_to_float(paramdict["Faiz Oranı - Yıllık Basit (%)"]) if paramdict["Faiz Oranı - Yıllık Basit (%)"] != None else 0)
         
         # Frequency
@@ -158,8 +157,9 @@ def get_security_params(infolist):
 
         # Create the DataFrame
         df = pd.DataFrame(data, columns=headers)
-        # print(df)
-        # print("df.shape =", df.shape)
+        
+        # Drop last row as it has no use
+        df = df.iloc[:(df.shape[0] - 1), :]
         
         # Coupon Frequency
         if paramdict["Kupon Ödeme Sıklığı"] is None:
