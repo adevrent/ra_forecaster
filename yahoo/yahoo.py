@@ -191,4 +191,4 @@ output_path = r"C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Histo
 
 ticker = "TSLA_US"
 
-yf_xw(ticker, output_path=None, holidays_filepath=holidays_filepath)
+yf_xw(ticker, output_path=output_path, holidays_filepath=holidays_filepath)
