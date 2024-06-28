@@ -137,7 +137,9 @@ def get_security_params(infolist):
         df_security_coupon.set_index("ISIN_CODE", inplace=True)
         
         # if no coupon payments, pass empty dataframe
-        if int(paramdict["Kupon Sayısı"]) == 0:
+        if paramdict["Kupon Sayısı"] is None:
+            df_security_coupon = df_security_coupon.iloc[0:0]
+        elif int(paramdict["Kupon Sayısı"]) == 0:
             df_security_coupon = df_security_coupon.iloc[0:0]
         
     # If more than 1 coupon payments, there is a cash flow table:
@@ -366,4 +368,4 @@ def kap_xw(output_path=None, issue_only=True):
     
 # Run code
 output_path = "C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\KAP\\"
-kap_xw(output_path=output_path, issue_only=True)
+kap_xw(output_path=None, issue_only=True)
