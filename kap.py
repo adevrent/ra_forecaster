@@ -340,17 +340,17 @@ def kap_xw(output_path=None, issue_only=True):
     default_sheet = wb.sheets[2]
     default_sheet.delete()
     
-    # Delete duplicate rows
-    for sheet in wb.sheets:
-        # Read the data into a DataFrame
-        df = sheet.range('A1').options(pd.DataFrame, header=1, index=False, expand='table').value
+    # # Delete duplicate rows
+    # for sheet in wb.sheets:
+    #     # Read the data into a DataFrame
+    #     df = sheet.range('A1').options(pd.DataFrame, header=1, index=False, expand='table').value
 
-        # Remove duplicate rows
-        df = df.drop_duplicates()
+    #     # Remove duplicate rows
+    #     df = df.drop_duplicates()
 
-        # Write the DataFrame back to the sheet
-        sheet.clear()
-        sheet.range('A1').value = [df.columns.tolist()] + df.values.tolist()
+    #     # Write the DataFrame back to the sheet
+    #     sheet.clear()
+    #     sheet.range('A1').value = [df.columns.tolist()] + df.values.tolist()
 
     
     # Make the first row bold
