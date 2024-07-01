@@ -1,0 +1,28 @@
+{
+    "SEGMN": [
+        {
+            "Halka Arz Tarihi": "26-27-28 Haziran 2024",
+            "Halka Arz Fiyatı/Aralığı": 30.0,
+            "Dağıtım Yöntemi": "Eşit Dağıtım **",
+            "Pay": 35000000,
+            "Bist Kodu": "SEGMN",
+            "Pazar": "Yıldız Pazar",
+            "Bist İlk İşlem Tarihi": "Hazırlanıyor...",
+            "İhraççı": "Seğmen Kardeşler Gıda Üretim ve Ambalaj Sanayi A.Ş."
+        },
+        "https://halkarz.com/segmen-kardesler-gida-uretim-ve-ambalaj-sanayi-a-s/"
+    ],
+    "EFORC": [
+        {
+            "Halka Arz Tarihi": "26-27-28 Haziran 2024",
+            "Halka Arz Fiyatı/Aralığı": 14.5,
+            "Dağıtım Yöntemi": "Eşit Dağıtım **",
+            "Pay": 90000000,
+            "Bist Kodu": "EFORC",
+            "Pazar": "Yıldız Pazar",
+            "Bist İlk İşlem Tarihi": "Hazırlanıyor...",
+            "İhraççı": "Efor Çay Sanayi Tic. A.Ş."
+        },
+        "https://halkarz.com/efor-cay-sanayi-tic-a-s/"
+    ]
+}

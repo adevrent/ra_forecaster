@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import json
+import os
 
 def european_to_float(value):
     """
@@ -101,8 +102,7 @@ def get_halkarz_info():
                         
                         # Create a Pandas Series and append it to the dataframe
                         series = pd.Series(company_info, name=bist_kodu)
-                        df = pd.concat([df, pd.DataFrame(series).T])
-                        
+                        df = pd.concat([df, pd.DataFrame(series).T])           
 
     # Re-formatting
     
@@ -119,10 +119,24 @@ def get_halkarz_info():
     return df, company_links
 
 def create_json(df, company_links):
+    # Check if the JSON file already exists
+    if os.path.exists('hazirlaniyor.json'):
+        with open('hazirlaniyor.json', 'r', encoding='utf-8') as f:
+            existing_data = json.load(f)
+    else:
+        existing_data = {}
+
     data_dict = df.to_dict(orient='index')
     final_dict = {key: [data_dict[key], company_links[key]] for key in data_dict}
+
+    # Update existing data with new entries
+    for key, value in final_dict.items():
+        if key not in existing_data:
+            existing_data[key] = value
+
+    # Write updated data back to JSON file
     with open('hazirlaniyor.json', 'w', encoding='utf-8') as f:
-        json.dump(final_dict, f, ensure_ascii=False, indent=4)
+        json.dump(existing_data, f, ensure_ascii=False, indent=4)
 
 # Test
 df, company_links = get_halkarz_info()
