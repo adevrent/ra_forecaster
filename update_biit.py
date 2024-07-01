@@ -50,5 +50,5 @@ def update_bist_ilk_islem_tarihi(json_file):
     with open(json_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-# Update the 'Bist İlk İşlem Tarihi' in the 'hazirlaniyor.json' file
-update_bist_ilk_islem_tarihi('hazirlaniyor.json')
+# Update the 'Bist İlk İşlem Tarihi' in the 'halkarz.json' file
+update_bist_ilk_islem_tarihi('halkarz.json')
