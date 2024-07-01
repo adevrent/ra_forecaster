@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import json
 
 def european_to_float(value):
     """
@@ -50,6 +51,7 @@ def get_halkarz_info():
 
     # Initialize empty dataframe and empty list for storing company links
     df = pd.DataFrame()
+    company_links = {}
     
     # Iterate over each company entry
     for entry in company_entries:
@@ -95,10 +97,12 @@ def get_halkarz_info():
                         company_info["İhraççı"] = company_title
                         print(f"İhraççı: {company_title}")
                         
-
+                        company_links[bist_kodu] = company_link
+                        
                         # Create a Pandas Series and append it to the dataframe
                         series = pd.Series(company_info, name=bist_kodu)
                         df = pd.concat([df, pd.DataFrame(series).T])
+                        
 
     # Re-formatting
     
@@ -109,8 +113,19 @@ def get_halkarz_info():
     # Convert "Pay" to float
     if "Pay" in df.columns:
         df["Pay"] = df["Pay"].apply(Pay_to_int)
+        
+    print("company links dict =", company_links)
     
-    return df
+    return df, company_links
+
+def create_json(df, company_links):
+    data_dict = df.to_dict(orient='index')
+    final_dict = {key: [data_dict[key], company_links[key]] for key in data_dict}
+    with open('hazirlaniyor.json', 'w', encoding='utf-8') as f:
+        json.dump(final_dict, f, ensure_ascii=False, indent=4)
 
 # Test
-print(get_halkarz_info())
+df, company_links = get_halkarz_info()
+create_json(df, company_links)
+
+print(df)
