@@ -297,7 +297,7 @@ def parse_disclosures(issue_only):
             normalized_summary = normalize_text(disc["summary"])
             print("IIII  normalized summary :", normalized_summary)
             if issue_only:
-                if (("ihrac" in normalized_summary) or ("tamamlanmasi" in normalized_summary)) and ("odeme" not in normalized_summary) and ("itfa" not in normalized_summary):
+                if (("ihrac" in normalized_summary) or ("tamamlanmasi" in normalized_summary)) and ("itfa" not in normalized_summary):
                     paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
             else: # skip "ihraci" filter
                 paramlist.append([disc["disclosureIndex"], False, disc["stockCodes"].split(',')[0].strip()])  # [sukuk flag, issuer code]
