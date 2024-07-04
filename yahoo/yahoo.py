@@ -189,6 +189,6 @@ def yf_xw(ticker, start_date=None, end_date=None, output_path=None, holidays_fil
 holidays_filepath = r"C:\Users\adevr\ra_forecaster\yahoo\riskfree_holiday.xlsx"
 output_path = r"C:\\Users\\adevr\\OneDrive\\Belgeler\\Riskactive Portföy\\Historical data\\"
 
-ticker = "TSLA_US"
+ticker = "EFORC"
 
 yf_xw(ticker, output_path=output_path, holidays_filepath=holidays_filepath)
