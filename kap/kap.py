@@ -118,7 +118,10 @@ def get_security_params(infolist):
         if paramdict["Kupon Ödeme Sıklığı"] is None:
             frequency = None
         else:
-            frequency = (int(paramdict["Kupon Ödeme Sıklığı"]) if paramdict["Kupon Ödeme Sıklığı"] != "Diğer" else None)
+            if paramdict["Kupon Ödeme Sıklığı"] == "Tek Kupon":
+                frequency = None
+            else:
+                frequency = (int(paramdict["Kupon Ödeme Sıklığı"]) if paramdict["Kupon Ödeme Sıklığı"] != "Diğer" else None)
         
         # Classification
         fis_dict={}
