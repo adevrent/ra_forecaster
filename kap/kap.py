@@ -116,12 +116,12 @@ def get_security_params(infolist):
         
         # Frequency
         if paramdict["Kupon Ödeme Sıklığı"] is None:
-            frequency = None
+            frequency = 0
         else:
             if paramdict["Kupon Ödeme Sıklığı"] == "Tek Kupon":
-                frequency = None
+                frequency = 1
             else:
-                frequency = (int(paramdict["Kupon Ödeme Sıklığı"]) if paramdict["Kupon Ödeme Sıklığı"] != "Diğer" else None)
+                frequency = (int(paramdict["Kupon Ödeme Sıklığı"]) if paramdict["Kupon Ödeme Sıklığı"] != "Diğer" else 0)
         
         # Classification
         fis_dict={}
@@ -178,7 +178,7 @@ def get_security_params(infolist):
         elif paramdict["Kupon Ödeme Sıklığı"].lower() == "aylık":
             frequency = 12
         else:
-            frequency = None
+            frequency = 0
         
         try:
             df["Faiz Oranı - Dönemsel (%)"] = df["Faiz Oranı - Dönemsel (%)"].apply(european_to_float)
