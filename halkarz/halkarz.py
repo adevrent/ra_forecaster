@@ -120,8 +120,8 @@ def get_halkarz_info():
 
 def create_json(df, company_links):
     # Check if the JSON file already exists
-    if os.path.exists('halkarz.json'):
-        with open('halkarz.json', 'r', encoding='utf-8') as f:
+    if os.path.exists('halkarz\halkarz.json'):
+        with open('halkarz\halkarz.json', 'r', encoding='utf-8') as f:
             existing_data = json.load(f)
     else:
         existing_data = {}
@@ -135,7 +135,7 @@ def create_json(df, company_links):
             existing_data[key] = value
 
     # Write updated data back to JSON file
-    with open('halkarz.json', 'w', encoding='utf-8') as f:
+    with open('halkarz\halkarz.json', 'w', encoding='utf-8') as f:
         json.dump(existing_data, f, ensure_ascii=False, indent=4)
 
 # Test

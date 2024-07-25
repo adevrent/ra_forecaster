@@ -24,5 +24,17 @@
             "İhraççı": "Efor Çay Sanayi Tic. A.Ş."
         },
         "https://halkarz.com/efor-cay-sanayi-tic-a-s/"
+    ],
+    "DCTTR": [
+        {
+            "Halka Arz Tarihi": "25-26 Temmuz 2024\n 10:30-13:00",
+            "Halka Arz Fiyatı/Aralığı": 14.0,
+            "Dağıtım Yöntemi": "Eşit Dağıtım **",
+            "Pay": 37500000,
+            "Bist Kodu": "DCTTR",
+            "Pazar": "Ana Pazar",
+            "İhraççı": "Dct Trading Dış Ticaret A.Ş."
+        },
+        "https://halkarz.com/dct-trading-dis-ticaret-a-s/"
     ]
 }
